@@ -1,21 +1,6 @@
 #include "string.h"
 
-void * memcpy(void *s1, const void *s2, register size_t n)
-{
-    register char *p1 = s1;
-    register const char *p2 = s2;
-
-
-    if (n) {
-        n++;
-        while (--n > 0) {
-            *p1++ = *p2++;
-        }
-    }
-    return s1;
-}
-
-void * memmove(void *s1, const void *s2, register size_t n)
+void * _memmove(void *s1, const void *s2, register size_t n)
 {
     register char *p1 = s1;
     register const char *p2 = s2;
@@ -38,7 +23,7 @@ void * memmove(void *s1, const void *s2, register size_t n)
     return s1;
 }
 
-void *memchr(const void *s, register int c, register size_t n)
+void *_memchr(const void *s, register int c, register size_t n)
 {
     register const unsigned char *s1 = s;
     c = (unsigned char) c;
@@ -52,7 +37,7 @@ void *memchr(const void *s, register int c, register size_t n)
     return NULL;
 }
 
-int memcmp(const void *s1, const void *s2, size_t n)
+int _memcmp(const void *s1, const void *s2, size_t n)
 {
     register const unsigned char *p1 = s1, *p2 = s2;
     if (n) {
@@ -65,31 +50,21 @@ int memcmp(const void *s1, const void *s2, size_t n)
     return 0;
 }
 
-void *memset(void *s, register int c, register size_t n)
-{
-    register char *s1 = s;
 
-    if (n>0) {
-        n++;
-        while (--n > 0) {
-            *s1++ = c;
-        }
-    }
-    return s;
+
+char* _strcat(char *_s1, const char *_s2)
+{
+    char *pszOrigDst = _s1;
+
+    while(*_s1)
+        _s1++;
+    while((*_s1++ = *_s2++) != '\0')
+        ;
+
+    return pszOrigDst;
 }
 
-char *strcat(char *ret, register const char *s2)
-{
-    register char *s1 = ret;
-    while (*s1++ != '\0')
-        /* EMPTY */ ;
-    s1--;
-    while (*s1++ = *s2++)
-        /* EMPTY */ ;
-    return ret;
-}
-
-char *strncat(char *ret, register const char *s2, size_t n)
+char *_strncat(char *ret, register const char *s2, size_t n)
 {
     register char *s1 = ret;
 
@@ -106,7 +81,7 @@ char *strncat(char *ret, register const char *s2, size_t n)
     } else return s1;
 }
 
-char *strchr(register const char *s, register int c)
+char *_strchr(register const char *s, register int c)
 {
     c = (char) c;
 
@@ -116,7 +91,7 @@ char *strchr(register const char *s, register int c)
     return (char *)s;
 }
 
-char *strrchr(register const char *s, int c)
+char *_strrchr(register const char *s, int c)
 {
     register const char *result = NULL;
 
@@ -130,7 +105,7 @@ char *strrchr(register const char *s, int c)
     return (char *)result;
 }
 
-int strcmp(register const char *s1, register const char *s2)
+int _strcmp(register const char *s1, register const char *s2)
 {
     while (*s1 == *s2++) {
         if (*s1++ == '\0') {
@@ -142,7 +117,7 @@ int strcmp(register const char *s1, register const char *s2)
     return (unsigned char) *s1 - (unsigned char) *s2;
 }
 
-int strncmp(register const char *s1, register const char *s2, register size_t n)
+int _strncmp(register const char *s1, register const char *s2, register size_t n)
 {
     if (n) {
         do {
@@ -160,7 +135,7 @@ int strncmp(register const char *s1, register const char *s2, register size_t n)
     return 0;
 }
 
-int strcoll(register const char *s1, register const char *s2)
+int _strcoll(register const char *s1, register const char *s2)
 {
     while (*s1 == *s2++) {
         if (*s1++ == '\0') {
@@ -170,7 +145,7 @@ int strcoll(register const char *s1, register const char *s2)
     return *s1 - *--s2;
 }
 
-char *strcpy(char *ret, register const char *s2)
+char *_strcpy(char *ret, register const char *s2)
 {
     register char *s1 = ret;
 
@@ -180,7 +155,7 @@ char *strcpy(char *ret, register const char *s2)
     return ret;
 }
 
-char *strncpy(char *ret, register const char *s2, register size_t n)
+char *_strncpy(char *ret, register const char *s2, register size_t n)
 {
     register char *s1 = ret;
 
@@ -196,7 +171,7 @@ char *strncpy(char *ret, register const char *s2, register size_t n)
     return ret;
 }
 
-size_t strlen(const char *org)
+size_t _strlen(const char *org)
 {
     register const char *s = org;
 
@@ -206,12 +181,12 @@ size_t strlen(const char *org)
     return --s - org;
 }
 
-char *strerror(register int errnum)
+char *_strerror(register int errnum)
 {
     return "unknown error";
 }
 
-size_t strspn(const char *string, const char *in)
+size_t _strspn(const char *string, const char *in)
 {
     register const char *s1, *s2;
 
@@ -224,7 +199,7 @@ size_t strspn(const char *string, const char *in)
     return s1 - string;
 }
 
-size_t strcspn(const char *string, const char *notin)
+size_t _strcspn(const char *string, const char *notin)
 {
     register const char *s1, *s2;
 
@@ -237,7 +212,7 @@ size_t strcspn(const char *string, const char *notin)
     return s1 - string;
 }
 
-char *strpbrk(register const char *string, register const char *brk)
+char *_strpbrk(register const char *string, register const char *brk)
 {
     register const char *s1;
 
@@ -251,18 +226,18 @@ char *strpbrk(register const char *string, register const char *brk)
     return (char *)NULL;
 }
 
-char *strstr(register const char *s, register const char *wanted)
+char *_strstr(register const char *s, register const char *wanted)
 {
-    register const size_t len = strlen(wanted);
+    register const size_t len = _strlen(wanted);
 
     if (len == 0) return (char *)s;
-    while (*s != *wanted || strncmp(s, wanted, len))
+    while (*s != *wanted || _strncmp(s, wanted, len))
         if (*s++ == '\0')
             return (char *)NULL;
     return (char *)s;
 }
 
-char *strtok(register char *string, const char *separators)
+char *_strtok(register char *string, const char *separators)
 {
     register char *s1, *s2;
     static char *savestring;
@@ -272,20 +247,20 @@ char *strtok(register char *string, const char *separators)
         if (string == NULL) return (char *)NULL;
     }
 
-    s1 = string + strspn(string, separators);
+    s1 = string + _strspn(string, separators);
     if (*s1 == '\0') {
         savestring = NULL;
         return (char *)NULL;
     }
 
-    s2 = strpbrk(s1, separators);
+    s2 = _strpbrk(s1, separators);
     if (s2 != NULL)
         *s2++ = '\0';
     savestring = s2;
     return s1;
 }
 
-size_t strxfrm(register char *s1, register const char *save, register size_t n)
+size_t _strxfrm(register char *s1, register const char *save, register size_t n)
 {
     register const char *s2 = save;
 
