@@ -14,5 +14,5 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: make
-      run: make -f GNUmakefile VERBOSE=1 -j$(nproc)
+      run: sudo make -f GNUmakefile VERBOSE=1 -j$(nproc)
 
