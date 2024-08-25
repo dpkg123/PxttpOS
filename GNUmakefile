@@ -22,7 +22,7 @@ limine:
 
 System.iso:
 	# $(MAKE) cleanObjFolder --silent
-	$(MAKE) cleanExternalFolder --silent
+	#$(MAKE) cleanExternalFolder --silent
 	$(MAKE) kernel
 	rm -rf iso_root
 	mkdir -p iso_root
