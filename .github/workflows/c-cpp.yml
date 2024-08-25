@@ -13,6 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - run: sudo apt update && sudo apt install nasm -y
     - name: make
       run: sudo make -f GNUmakefile VERBOSE=1 -j$(nproc)
 
