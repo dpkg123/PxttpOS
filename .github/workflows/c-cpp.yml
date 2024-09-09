@@ -16,5 +16,5 @@ jobs:
     - run: sudo apt update && sudo apt install nasm clang -y
     - run: sudo chmod 777 -v limine/*
     - name: make
-      run: sudo make -f GNUmakefile VERBOSE=1 V=1 CC=clang -j$(nproc)
+      run: sudo make -f GNUmakefile VERBOSE=1 V=1 CC=clang++ -j$(nproc)
 
