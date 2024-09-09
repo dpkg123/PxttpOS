@@ -13,9 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: goto-bus-stop/setup-zig@v2
     - run: sudo apt update && sudo apt install nasm clang -y
     - run: sudo chmod 777 -v limine/*
     - name: make
-      run: sudo make -f GNUmakefile VERBOSE=1 V=1 CC="zig cc -target x86_64-linux-musl" -j$(nproc)
+      run: sudo make -f GNUmakefile VERBOSE=1 V=1 -j$(nproc)
 
