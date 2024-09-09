@@ -181,7 +181,6 @@ namespace PCI
         //     io_wait(1000);
         // }
 
-
         if (pciDeviceHeader->Class == 0x04 && pciDeviceHeader->SubClass == 0x01 && pciDeviceHeader->Prog_IF == 0x00)
         {
             new AC97::AC97Driver(pciDeviceHeader);
@@ -218,6 +217,7 @@ namespace PCI
     }
 
 
+    
 
 
     IOAddress get_address(PCIDeviceHeader* hdr, uint8_t field)

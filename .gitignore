@@ -13,3 +13,8 @@ objects/**/*.elf
 
 System.iso
 external/programs.saf
+
+iso_root/**
+
+# 忽略 .vscode 目录
+.vscode/
