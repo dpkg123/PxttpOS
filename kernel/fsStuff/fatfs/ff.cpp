@@ -20,8 +20,65 @@
 
 
 #include <string.h>
-#include "ff.h"			/* Declarations of FatFs API */
+#include <libm/memStuff.h>
+#include "../../rendering/testoDebug.h"
+#include <libm/rendering/Cols.h>
+#include <limits.h>
+#include <libm/ctype.h>
+//#include "ff.h"			/* Declarations of FatFs API */
+#include "../../osData/osData.h"
+#include <libm/stubs.h>
 #include "diskio.h"		/* Declarations of device I/O functions */
+
+
+/**
+ * @brief free_memory_2 释放 二级指针 内存
+ * @param p 三级指针 指向 二级指针内存, 目的是为了将 二级指针 置空
+ * @param count 二级指针 指向的 一级指针 个数
+ */
+void free_memory_2(void ***str, uint64_t count)
+{
+    // 循环控制变量
+    uint64_t i =0;
+
+    // 函数内部 临时 局部 二级指针 变量
+    // 用于接收 str 三级指针 指向的 二级指针
+    void **p = NULL;
+
+    // 验证 函数 形参 合法性
+    if (str == NULL)
+    {
+        return;
+    }
+
+    // 接收 str 三级指针 指向的 二级指针
+    p = *str;
+    // 验证 指针 合法性
+    if (p == NULL)
+    {
+        return ;
+    }
+
+    // 先释放 二级指针 指向的 一级指针 内存
+    for (i=0; i < count; i++)
+    {
+        // 如果 一级指针 不为空才释放
+        // 如果为空 , 则不释放
+        if (p[i] != NULL)
+        {
+            ff_memfree(p[i]);
+        }
+    }
+
+    // 释放 二维指针 指向的 一维指针变量 所在的内存
+    if (p != NULL)
+    {
+        ff_memfree(p);
+    }
+
+    // 将最终的 三维指针 指向的 二维指针 置空
+    *str = NULL;
+}
 
 
 /*--------------------------------------------------------------------------
@@ -461,7 +518,7 @@ typedef struct {
 #if FF_VOLUMES < 1 || FF_VOLUMES > 10
 #error Wrong FF_VOLUMES setting
 #endif
-static FATFS *FatFs[FF_VOLUMES];	/* Pointer to the filesystem objects (logical drives) */
+
 static WORD Fsid;					/* Filesystem mount ID */
 
 #if FF_FS_RPATH != 0
@@ -3129,8 +3186,64 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 }
 
 
+/*-----------------------------------------------------------------------*/
+/* atoi function in ff.cpp                                               */
+/*-----------------------------------------------------------------------*/
+int ff_atoi(char* str)
+{
+	//assert(str);
+    if(str){PrintMsgCol("str is not null", Colors.red);return -1;}
+	if (*str == '\0')//空字符串问题
+	{
+		return 0;
+	}
+	//+-号问题
+	//用isspace函数向后过滤空白字符
+	//isspace返回值不为0，代表是空格
+	while (isspace(*str))
+	{
+		str++;
+	}//走到这里str一定不是空格了
 
+	int flg = 1;
+	if (*str == '+')
+	{
+		flg = 1;
+		str++;
+	}//注意这里要用else if，不能用else
+	else if (*str == '-')
+	{
+		flg = -1;
+		str++;
+	}
+	long long n = 0;
+	while (*str != '\0')
+	{
+		if (IsDigit(*str))
+		{//是数字字符==>返回值不为0
+			n = n * 10 + (*str - '0') * flg;
+			if (n > INT_MAX)
+			{
+				n = INT_MAX;
+			}
+			if (n < INT_MIN)
+			{
+				n = INT_MIN;
+			}
+		}
+		else//不是数字字符
+		{
+			return (int)n;
+		}
+		str++;
+	}
+	if (*str == '\0')
+	{
+		//status = VAILD;//走到‘\0’就是合法转换
+	}
+	return (int)n;
 
+}
 /*-----------------------------------------------------------------------*/
 /* Get logical drive number from path name                               */
 /*-----------------------------------------------------------------------*/
@@ -3139,72 +3252,24 @@ static int get_ldnumber (	/* Returns logical drive number (-1:invalid drive numb
 	const TCHAR** path		/* Pointer to pointer to the path name */
 )
 {
-	const TCHAR *tp;
-	const TCHAR *tt;
-	TCHAR tc;
-	int i;
-	int vol = -1;
-#if FF_STR_VOLUME_ID		/* Find string volume ID */
-	const char *sp;
-	char c;
-#endif
+	const TCHAR *p;
 
-	tt = tp = *path;
-	if (!tp) return vol;	/* Invalid path name? */
-	do {					/* Find a colon in the path */
-		tc = *tt++;
-	} while (!IsTerminator(tc) && tc != ':');
-
-	if (tc == ':') {	/* DOS/Windows style volume ID? */
-		i = FF_VOLUMES;
-		if (IsDigit(*tp) && tp + 2 == tt) {	/* Is there a numeric volume ID + colon? */
-			i = (int)*tp - '0';	/* Get the LD number */
-		}
-#if FF_STR_VOLUME_ID == 1	/* Arbitrary string is enabled */
-		else {
-			i = 0;
-			do {
-				sp = VolumeStr[i]; tp = *path;	/* This string volume ID and path name */
-				do {	/* Compare the volume ID with path name */
-					c = *sp++; tc = *tp++;
-					if (IsLower(c)) c -= 0x20;
-					if (IsLower(tc)) tc -= 0x20;
-				} while (c && (TCHAR)c == tc);
-			} while ((c || tp != tt) && ++i < FF_VOLUMES);	/* Repeat for each id until pattern match */
-		}
-#endif
-		if (i < FF_VOLUMES) {	/* If a volume ID is found, get the drive number and strip it */
-			vol = i;		/* Drive number */
-			*path = tt;		/* Snip the drive prefix off */
-		}
-		return vol;
-	}
-#if FF_STR_VOLUME_ID == 2		/* Unix style volume ID is enabled */
-	if (*tp == '/') {			/* Is there a volume ID? */
-		while (*(tp + 1) == '/') tp++;	/* Skip duplicated separator */
-		i = 0;
-		do {
-			tt = tp; sp = VolumeStr[i]; /* Path name and this string volume ID */
-			do {	/* Compare the volume ID with path name */
-				c = *sp++; tc = *(++tt);
-				if (IsLower(c)) c -= 0x20;
-				if (IsLower(tc)) tc -= 0x20;
-			} while (c && (TCHAR)c == tc);
-		} while ((c || (tc != '/' && !IsTerminator(tc))) && ++i < FF_VOLUMES);	/* Repeat for each ID until pattern match */
-		if (i < FF_VOLUMES) {	/* If a volume ID is found, get the drive number and strip it */
-			vol = i;		/* Drive number */
-			*path = tt;		/* Snip the drive prefix off */
-		}
-		return vol;
-	}
-#endif
-	/* No drive prefix is found */
-#if FF_FS_RPATH != 0
-	vol = CurrVol;	/* Default drive is current drive */
-#else
-	vol = 0;		/* Default drive is 0 */
-#endif
-	return vol;		/* Return the default drive */
+    p = *path;
+    if(!p){return -1;}
+    //char* pp = {0};
+    for (int i = 0; i < sizeof(p); i++) {
+        if (p[i] == ':') {
+            char* pp = (char*)ff_memalloc(i * sizeof(char));
+            int size = sizeof(pp);
+            _memset(pp, 0, size);
+            for (int j = 0; j < i; j++)
+                *(pp + j) = *(p + j);
+            int val = ff_atoi(pp);
+            ff_memfree(pp);
+            return val;
+            break;
+        }
+    }
 }
 
 
@@ -3403,7 +3468,7 @@ static FRESULT mount_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 	if (vol < 0) return FR_INVALID_DRIVE;
 
 	/* Check if the filesystem object is valid or not */
-	fs = FatFs[vol];					/* Get pointer to the filesystem object */
+	fs = osData.FatFs[vol];					/* Get pointer to the filesystem object */
 	if (!fs) return FR_NOT_ENABLED;		/* Is the filesystem object available? */
 #if FF_FS_REENTRANT
 	if (!lock_volume(fs, 1)) return FR_TIMEOUT;	/* Lock the volume, and system if needed */
@@ -3647,7 +3712,15 @@ static FRESULT validate (	/* Returns FR_OK or FR_INVALID_OBJECT */
    Public Functions (FatFs API)
 
 ----------------------------------------------------------------------------*/
-
+void InitFatFs_Table(){
+    //Allocate memory for FatFs(row: [Size of disk interfaces count], col: 1)
+    AddToStack();
+#define SizeOfDI osData.diskInterfaces.GetCount()
+    osData.FatFs = List<FATFS*>(SizeOfDI);
+#undef SizeOfDI
+    osData.FatFs.Clear();
+    RemoveFromStack();
+}
 
 
 /*-----------------------------------------------------------------------*/
@@ -3669,10 +3742,10 @@ FRESULT f_mount (
 	/* Get volume ID (logical drive number) */
 	vol = get_ldnumber(&rp);
 	if (vol < 0) return FR_INVALID_DRIVE;
-	cfs = FatFs[vol];			/* Pointer to the filesystem object of the volume */
+	cfs = osData.FatFs[vol];			/* Pointer to the filesystem object of the volume */
 
 	if (cfs) {					/* Unregister current filesystem object if regsitered */
-		FatFs[vol] = 0;
+		osData.FatFs[vol] = 0;
 #if FF_FS_LOCK
 		clear_share(cfs);
 #endif
@@ -3698,7 +3771,7 @@ FRESULT f_mount (
 #endif
 #endif
 		fs->fs_type = 0;		/* Invalidate the new filesystem object */
-		FatFs[vol] = fs;		/* Register new fs object */
+		osData.FatFs[vol] = fs;		/* Register new fs object */
 	}
 
 	if (opt == 0) return FR_OK;	/* Do not mount now, it will be mounted in subsequent file functions */
@@ -4238,6 +4311,7 @@ FRESULT f_close (
 #endif
 		}
 	}
+    //free_memory_2(&FatFs,osData.diskInterfaces.GetCount());
 	return res;
 }
 
@@ -5902,11 +5976,13 @@ FRESULT f_mkfs (
 	DSTATUS ds;
 	FRESULT res;
 
+    
+
 
 	/* Check mounted drive and clear work area */
 	vol = get_ldnumber(&path);					/* Get target logical drive */
 	if (vol < 0) return FR_INVALID_DRIVE;
-	if (FatFs[vol]) FatFs[vol]->fs_type = 0;	/* Clear the fs object if mounted */
+	if (osData.FatFs[vol]) osData.FatFs[vol]->fs_type = 0;	/* Clear the fs object if mounted */
 	pdrv = LD2PD(vol);		/* Hosting physical drive */
 	ipart = LD2PT(vol);		/* Hosting partition (0:create as new, 1..:existing partition) */
 
